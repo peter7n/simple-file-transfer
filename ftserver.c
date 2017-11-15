@@ -21,7 +21,8 @@ int main(int argc, char *argv[])
 {
 	int serverSocket = 0;
 	int connectionSocket = 0;
-	char clientCommand[500];
+	char clientCommand[100];
+	char dataPort[100];
 	socklen_t clilen;    	// size of client address
 	struct sockaddr_in cli_addr;
 
@@ -43,7 +44,8 @@ int main(int argc, char *argv[])
 		connectionSocket = accept(serverSocket,
 				(struct sockaddr *) &cli_addr, &clilen);
 
-		recv(connectionSocket, clientCommand, 500, 0);
+		memset(clientCommand, 0, 100);
+		recv(connectionSocket, clientCommand, 100, 0);
 		printf("client command: %s\n", clientCommand);
 		close(connectionSocket);
 	}

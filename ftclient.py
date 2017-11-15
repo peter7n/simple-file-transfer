@@ -32,8 +32,9 @@ def serverConnect(userHost, userPort):
 # Parameters:
 # Returns:
 #  ==================================================================
-def sendCommand(command, dataPort, clientSock):
-    clientSock.send(command.encode())
+def sendCommand(command, fileName, dataPort, clientSock):
+    string = command + " " + fileName + " " + dataPort
+    clientSock.send(string.encode())
     clientSock.close()
 
 # ==================================================================
@@ -43,4 +44,11 @@ def sendCommand(command, dataPort, clientSock):
 clientSocket = serverConnect(sys.argv[1], sys.argv[2])
 
 # Send command, file name and data port # to serverSocket
-sendCommand(sys.argv[3], sys.argv[4], clientSocket)
+if len(sys.argv) < 5:
+    print("Not enough arguments")
+elif len(sys.argv) == 5:
+    sendCommand(sys.argv[3], "", sys.argv[4], clientSocket)
+elif len(sys.argv) == 6:
+    sendCommand(sys.argv[3], sys.argv[4], sys.argv[5], clientSocket)
+else:
+    print("Incorrect number of arguments")
