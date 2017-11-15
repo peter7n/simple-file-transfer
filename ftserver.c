@@ -15,14 +15,14 @@
 #include <netinet/in.h>
 #include <netdb.h>
 
-int serverSetup(char *userPort);
+int serverSetup(int userPort);
+void receiveCommand(int userPort);
 
 int main(int argc, char *argv[])
 {
 	int serverSocket = 0;
 	int connectionSocket = 0;
 	char clientCommand[100];
-	char dataPort[100];
 	socklen_t clilen;    	// size of client address
 	struct sockaddr_in cli_addr;
 
@@ -34,7 +34,7 @@ int main(int argc, char *argv[])
    }
 
 	// Initialize "welcome" socket
-	serverSocket = serverSetup(argv[1]);
+	serverSocket = serverSetup(atoi(argv[1]));
 
 	while (1)
 	{
@@ -47,6 +47,9 @@ int main(int argc, char *argv[])
 		memset(clientCommand, 0, 100);
 		recv(connectionSocket, clientCommand, 100, 0);
 		printf("client command: %s\n", clientCommand);
+
+		receiveCommand(32342);
+
 		close(connectionSocket);
 	}
 
@@ -60,8 +63,7 @@ int main(int argc, char *argv[])
  ** Parameters: char* userPort
  ** Returns: int, the new server socket
  *********************************************************************/
-
-int serverSetup(char *userPort)
+int serverSetup(int userPort)
 {
 	int newSocket = 0;
 	int portNum = 0;
@@ -74,7 +76,7 @@ int serverSetup(char *userPort)
 
 	// Set server address and port number
 	bzero((char *) &serverAddress, sizeof(serverAddress)); // reset to zero's
-	portNum = atoi(userPort);
+	portNum = userPort;
 	serverAddress.sin_family = AF_INET;
 	serverAddress.sin_port = htons(portNum);
 	serverAddress.sin_addr.s_addr = INADDR_ANY;
@@ -85,4 +87,26 @@ int serverSetup(char *userPort)
  		printf("ERROR on binding\n");
 
 	return newSocket;
+}
+
+/*********************************************************************
+ ** Function: receiveCommand
+ ** Description:
+ **
+ ** Parameters:
+ ** Returns:
+ *********************************************************************/
+void receiveCommand(int userPort)
+{
+	int dataSocket = 0;
+	char msg[30] = "Hello, world on data port!";
+
+	dataSocket = serverSetup(userPort);
+	listen(dataSocket, 1);
+	printf("Data Port ready\n");
+	clilen = sizeof(cli_addr);
+	connectionSocket = accept(serverSocket,
+			(struct sockaddr *) &cli_addr, &clilen);
+	send(dataSocket, msg, strlen(msg), 0);
+	close(dataSocket);
 }

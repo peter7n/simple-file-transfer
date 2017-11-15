@@ -52,3 +52,8 @@ elif len(sys.argv) == 6:
     sendCommand(sys.argv[3], sys.argv[4], sys.argv[5], clientSocket)
 else:
     print("Incorrect number of arguments")
+
+dataSocket = serverConnect(sys.argv[1], "32342")
+dataMsg = dataSocket.recv(1024).decode()
+print dataMsg
+dataSocket.close()
