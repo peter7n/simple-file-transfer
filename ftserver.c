@@ -16,13 +16,13 @@
 #include <netdb.h>
 
 int serverSetup(int userPort);
-void receiveCommand(int userPort);
+void receiveCommand(int userPort, int controlSock);
+void error(const char *msg);
 
 int main(int argc, char *argv[])
 {
 	int serverSocket = 0;
 	int connectionSocket = 0;
-	char clientCommand[100];
 	socklen_t clilen;    	// size of client address
 	struct sockaddr_in cli_addr;
 
@@ -33,7 +33,7 @@ int main(int argc, char *argv[])
 		exit(1);
    }
 
-	// Initialize "welcome" socket
+	// Initialize Control "welcome" socket
 	serverSocket = serverSetup(atoi(argv[1]));
 
 	while (1)
@@ -44,11 +44,7 @@ int main(int argc, char *argv[])
 		connectionSocket = accept(serverSocket,
 				(struct sockaddr *) &cli_addr, &clilen);
 
-		memset(clientCommand, 0, 100);
-		recv(connectionSocket, clientCommand, 100, 0);
-		printf("client command: %s\n", clientCommand);
-
-		receiveCommand(32342);
+		receiveCommand(32444, connectionSocket);
 
 		close(connectionSocket);
 	}
@@ -72,7 +68,7 @@ int serverSetup(int userPort)
 	// Open the socket
 	newSocket = socket(AF_INET, SOCK_STREAM, 0);
 	if (newSocket < 0)
-		printf("ERROR opening socket\n");
+		error("ERROR opening socket");
 
 	// Set server address and port number
 	bzero((char *) &serverAddress, sizeof(serverAddress)); // reset to zero's
@@ -84,7 +80,7 @@ int serverSetup(int userPort)
 	// Bind socket to address
    if (bind(newSocket, (struct sockaddr *) &serverAddress,
 			sizeof(serverAddress)) < 0)
- 		printf("ERROR on binding\n");
+ 		error("ERROR on binding");
 
 	return newSocket;
 }
@@ -96,17 +92,66 @@ int serverSetup(int userPort)
  ** Parameters:
  ** Returns:
  *********************************************************************/
-void receiveCommand(int userPort)
+void receiveCommand(int userPort, int controlSock)
 {
 	int dataSocket = 0;
+	int conSocket = 0;
+	char* strFrag;
+	char strArray[3][30];
+	char clientCommand[100];
+	char readyMsg[30] = "READY";
+	char errorMsg[30] = "INVALID COMMAND";
 	char msg[30] = "Hello, world on data port!";
+	socklen_t clilen;
+	struct sockaddr_in cli_addr;
 
+	// Receive command string from client
+	memset(clientCommand, 0, sizeof(clientCommand));
+	recv(controlSock, clientCommand, sizeof(clientCommand), 0);
+	printf("client command: %s\n", clientCommand);
+
+	// Parse the string for commmand, (filename), port#
+	strFrag = strtok(clientCommand, " ");
+	int i = 0;
+	while (strFrag != NULL)
+	{
+		strcpy(strArray[i], strFrag);
+		printf("%s\n", strArray[i]);
+		strFrag = strtok(NULL, " ");
+		i++;
+	}
+
+	if (strcmp(strArray[0], "-l") == 0)
+		printf("***Perform -l command here\n");
+	else if (strcmp(strArray[0], "-g") == 0)
+		printf("***Perform -g command here\n");
+	else
+	{
+		printf("INVALID COMMAND\n");
+		send(controlSock, errorMsg, strlen(readyMsg), 0);
+	}
+
+	// Initialize the Data "welcome" socket
 	dataSocket = serverSetup(userPort);
 	listen(dataSocket, 1);
-	printf("Data Port ready\n");
+	printf("Data Port ready to receive\n");
+	// Send READY message for client to connect to Data socket
+	send(controlSock, readyMsg, strlen(readyMsg), 0);
 	clilen = sizeof(cli_addr);
-	connectionSocket = accept(serverSocket,
+	// Accept connection on Data socket
+	conSocket = accept(dataSocket,
 			(struct sockaddr *) &cli_addr, &clilen);
-	send(dataSocket, msg, strlen(msg), 0);
-	close(dataSocket);
+	send(conSocket, msg, strlen(msg), 0);
+	close(conSocket);
+}
+
+/*********************************************************************
+ ** error
+ ** Description: Displays an error message
+ ** Parameters: const char *msg
+ *********************************************************************/
+void error(const char *msg)
+{
+  perror(msg);
+  exit(1);
 }
