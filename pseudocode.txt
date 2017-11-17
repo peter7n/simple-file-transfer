@@ -1,0 +1,42 @@
+ftserver (c)
+
+main
+	validate command line input: SERVER_PORT
+	call Function serverSetup(userPort)
+	while True:
+		listen on SERVER_PORT
+		accept connection P
+		call Function receiveCommand(socketP)
+
+Function serverSetup
+
+Function receiveCommand
+	receive clientCommand
+	if clientCommand == "-l":
+		call Function dataPortSetup
+		call Function sendDirectory
+	else if clientCommand == "-g":
+		call Function dataPortSetup
+		call Function transferFile
+	else:
+		send to P("INVALID COMMAND")
+
+Function sendDirectory
+	unix pipe ls > buffer
+	call Function writeSocket
+
+Function writeSocket
+
+===============================
+
+ftclient (python)
+
+main
+	validate command line input: SERVER_HOST, SERVER_PORT,
+			COMMAND, FILENAME, DATA_PORT
+	call Function serverConnect(SERVER_HOST, SERVER_PORT)
+	call Function sendCommand(COMMAND, FILENAME, DATAPORT, clientSocket)
+
+Function serverConnect()
+
+Function sendCommand(COMMAND, FILENAME, DATAPORT, clientSocket)

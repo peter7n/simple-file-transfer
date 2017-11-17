@@ -42,27 +42,37 @@ def sendCommand(command, fileName, dataPort, clientSock):
 # ==================================================================
 # Main Program
 # ==================================================================
-# Get server name and port # from command line
-clientSocket = serverConnect(sys.argv[1], sys.argv[2])
+# Get server name, port # and command from command line
+hostArg = sys.argv[1]
+serverPortArg = sys.argv[2]
+commandArg = sys.argv[3]
+clientSocket = serverConnect(hostArg, serverPortArg)
 
 # Send command, file name and data port # to serverSocket
 if len(sys.argv) < 5:
     print("Not enough arguments")
 elif len(sys.argv) == 5:
-    sendCommand(sys.argv[3], "", sys.argv[4], clientSocket)
+    dataPortArg = sys.argv[4]
+    sendCommand(commandArg, "", dataPortArg, clientSocket)
 elif len(sys.argv) == 6:
-    sendCommand(sys.argv[3], sys.argv[4], sys.argv[5], clientSocket)
+    fileArg = sys.argv[4]
+    dataPortArg = sys.argv[5]
+    sendCommand(commandArg, fileArg, dataPortArg, clientSocket)
 else:
     print("Incorrect number of arguments")
 
+# Receive either INVALID COMMAND or READY message
+# READY means the data port is ready for connections
 readyMsg = ""
+readyMsg = clientSocket.recv(1024).decode()
+if readyMsg == "INVALID COMMAND":
+    print(readyMsg)
+    sys.exit("Error: Exiting Program")
 while readyMsg != "READY":
     readyMsg = clientSocket.recv(1024)
 print(readyMsg.decode())
 
-dHost = "localhost"
-dPort = "32444"
-dataSocket = serverConnect(dHost, dPort)
+dataSocket = serverConnect(hostArg, dataPortArg)
 dataMsg = dataSocket.recv(1024)
 print(dataMsg.decode())
 
