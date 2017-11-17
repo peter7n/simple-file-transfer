@@ -17,9 +17,9 @@
 
 int serverSetup(int userPort);
 void receiveCommand(int controlSock);
-void dataSocketSetup(int userPort, int controlSock);
-void sendDirectory();
-void transferFile();
+int dataSocketSetup(int userPort, int controlSock);
+void sendDirectory(int dataSock);
+void transferFile(int dataSock);
 void error(const char *msg);
 
 int main(int argc, char *argv[])
@@ -98,6 +98,7 @@ int serverSetup(int userPort)
 void receiveCommand(int controlSock)
 {
 	int userPort = 0;
+	int dataSocket = 0;
 	char* strFrag;
 	char strArray[3][30];
 	char clientCommand[100];
@@ -125,16 +126,17 @@ void receiveCommand(int controlSock)
 	else
 		userPort = atoi(strArray[2]);
 
-	// Execute the command sent or send error message
+	// Open the data socket and execute the command
+	// Otherwise send Invalid Command message
 	if (strcmp(strArray[0], "-l") == 0)
 	{
-		dataSocketSetup(userPort, controlSock);
-		sendDirectory();
+		dataSocket = dataSocketSetup(userPort, controlSock);
+		sendDirectory(dataSocket);
 	}
 	else if (strcmp(strArray[0], "-g") == 0)
 	{
-		dataSocketSetup(userPort, controlSock);
-		transferFile();
+		dataSocket = dataSocketSetup(userPort, controlSock);
+		transferFile(dataSocket);
 	}
 	else
 	{
@@ -150,19 +152,18 @@ void receiveCommand(int controlSock)
  ** Parameters:
  ** Returns:
  *********************************************************************/
-void dataSocketSetup(int userPort, int controlSock)
+int dataSocketSetup(int userPort, int controlSock)
 {
 	int dataSocket = 0;
 	int conSocket = 0;
 	char readyMsg[30] = "READY";
-	char msg[30] = "Hello, world on data port!";
 	socklen_t clilen;
 	struct sockaddr_in cli_addr;
 
 	// Initialize the Data "welcome" socket
 	dataSocket = serverSetup(userPort);
 	listen(dataSocket, 1);
-	printf("Data Port ready to receive\n");
+	printf("Connecting to Data Port ...\n");
 
 	// Send READY message for client to connect to Data socket
 	send(controlSock, readyMsg, strlen(readyMsg), 0);
@@ -171,18 +172,35 @@ void dataSocketSetup(int userPort, int controlSock)
 	// Accept connection on Data socket
 	conSocket = accept(dataSocket,
 			(struct sockaddr *) &cli_addr, &clilen);
-	send(conSocket, msg, strlen(msg), 0);
-	close(conSocket);
+
+	return conSocket;
 }
 
-void sendDirectory()
+void sendDirectory(int dataSock)
 {
-	printf("***Perform -l command here\n");
+	char msg[50] = "Sending directory on data port!";
+
+	send(dataSock, msg, strlen(msg), 0);
+	close(dataSock);
+
+	char buff[BUFSIZ];
+	char bigBuffer[500];
+	FILE *fp = popen("ls","r");
+	while ( fgets( buff, BUFSIZ, fp ) != NULL )
+	{
+	  printf("LS->%s", buff );
+	  strcat(bigBuffer, buff);
+	}
+	pclose(fp);
+	printf("buff: %s", bigBuffer);
 }
 
-void transferFile()
+void transferFile(int dataSock)
 {
-	printf("***Perform -g command here\n");
+	char msg[50] = "Sending file on data port!";
+
+	send(dataSock, msg, strlen(msg), 0);
+	close(dataSock);
 }
 
 /*********************************************************************

@@ -48,7 +48,7 @@ serverPortArg = sys.argv[2]
 commandArg = sys.argv[3]
 clientSocket = serverConnect(hostArg, serverPortArg)
 
-# Send command, file name and data port # to serverSocket
+# Send command, file name and data port # to server
 if len(sys.argv) < 5:
     print("Not enough arguments")
 elif len(sys.argv) == 5:
@@ -67,11 +67,12 @@ readyMsg = ""
 readyMsg = clientSocket.recv(1024).decode()
 if readyMsg == "INVALID COMMAND":
     print(readyMsg)
-    sys.exit("Error: Exiting Program")
+    sys.exit("Exiting Program")
 while readyMsg != "READY":
     readyMsg = clientSocket.recv(1024)
 print(readyMsg.decode())
 
+# Connect to Data Socket
 dataSocket = serverConnect(hostArg, dataPortArg)
 dataMsg = dataSocket.recv(1024)
 print(dataMsg.decode())
