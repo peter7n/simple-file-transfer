@@ -23,6 +23,7 @@ void receiveCommand(int controlSock);
 int dataSocketSetup(int userPort, int controlSock);
 void sendDirectory(int dataSock);
 void transferFile(char* fileName, int dataSock);
+void writeSocket(int dataSock, char* buffer);
 void error(const char *msg);
 
 int main(int argc, char *argv[])
@@ -218,7 +219,11 @@ void transferFile(char* fileName, int dataSock)
 {
 	FILE* filePtr;
 	char msg[50] = "Sending file on data port!";
-	char txtBuffer[BUFF_SIZE];
+	char intToStr[10];
+	char tempBuffer[BUFF_SIZE];
+	char textBuffer[BUFF_SIZE];
+	int dataSizeNum = 0;
+	int returnStatus = 0;
 
 	// Read the file into buffer
 	filePtr = fopen(fileName, "r");
@@ -227,16 +232,63 @@ void transferFile(char* fileName, int dataSock)
 		fprintf(stderr, "Could not open file\n");
 		exit(1);
    }
-   bzero(txtBuffer, BUFF_SIZE);
-   fgets(txtBuffer, BUFF_SIZE, filePtr);
+   bzero(textBuffer, BUFF_SIZE);
+   while (fgets(tempBuffer, BUFF_SIZE, filePtr))
+		strcat(textBuffer, tempBuffer);
    fclose(filePtr);
 
-	printf("buff: %s", txtBuffer);
+	printf("%s", textBuffer);
 
-	// run writeSock
+	// Send the data size of the file to the client
+	dataSizeNum = strlen(textBuffer);
+	sprintf(intToStr, "%d", dataSizeNum);	// convert to string
+   returnStatus = send(dataSock, intToStr, sizeof(intToStr), 0);
+   if (returnStatus < 0)
+     error("ERROR writing data size");
+   // Send the file contents to the client
+   // writeSocket(dataSock, textBuffer);
 
-	send(dataSock, msg, strlen(msg), 0);
+	// send(dataSock, textBuffer, strlen(textBuffer), 0);
 	close(dataSock);
+}
+
+/*********************************************************************
+ ** writeSocket
+ ** Description: Writes data to the specified socket from the
+ ** specified buffer in "chunks" of 1000 bytes.
+ ** Parameters: int dataSock, char* buffer
+ *********************************************************************/
+void writeSocket(int dataSock, char* buffer)
+{
+  int bytesWrit,
+      totalBytesWrit = 0,
+      index,
+      tempIndex;
+  char tempBuffer[BUFF_SIZE];
+
+  bytesWrit = write(dataSock, buffer, strlen(buffer));
+
+  if (bytesWrit < 0)
+    error("ERROR writing to socket");
+  else if (bytesWrit < strlen(buffer))
+  {
+    // Continue to write until all data has been sent
+    while (totalBytesWrit != strlen(buffer))
+    {
+      totalBytesWrit += bytesWrit;
+      index = totalBytesWrit + 1;
+      tempIndex = 0;
+      do
+      // Copy remaining data to be written until temp buffer
+      {
+        tempBuffer[tempIndex] = buffer[index];
+        index++;
+        tempIndex++;
+      } while (buffer[index] != '\0');
+
+      bytesWrit = write(dataSock, tempBuffer, strlen(tempBuffer));
+    }
+  }
 }
 
 /*********************************************************************
