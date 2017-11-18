@@ -17,11 +17,13 @@ from socket import *
 # Parameters:
 # Returns:
 #  ==================================================================
+
 def serverConnect(userHost, userPort):
     serverName = userHost
     serverPort = int(userPort)
     newSocket = socket(AF_INET, SOCK_STREAM)
     # Connect to server
+    print("Connecting ...")
     newSocket.connect((serverName, serverPort))
     return newSocket
 
@@ -32,6 +34,7 @@ def serverConnect(userHost, userPort):
 # Parameters:
 # Returns:
 #  ==================================================================
+
 def sendCommand(command, fileName, dataPort, clientSock):
     if fileName == "":
         string = command + " " + dataPort
@@ -40,15 +43,38 @@ def sendCommand(command, fileName, dataPort, clientSock):
     clientSock.send(string.encode())
 
 # ==================================================================
+# Function: receiveReady
+# Description:
+#
+# Parameters:
+# Returns:
+#  ==================================================================
+
+def confirmCommand(clientSock):
+    # Receive either INVALID COMMAND or READY message
+    # READY means the data port is ready for connection
+    readyMsg = ""
+    readyMsg = clientSock.recv(1024).decode()
+    if readyMsg == "INVALID COMMAND":
+        print(readyMsg)
+        sys.exit("Exiting Program")
+    while readyMsg != "READY":
+        readyMsg = clientSock.recv(1024)
+    print(readyMsg.decode())
+
+# ==================================================================
 # Main Program
 # ==================================================================
+
 # Get server name, port # and command from command line
 hostArg = sys.argv[1]
 serverPortArg = sys.argv[2]
 commandArg = sys.argv[3]
+# Connect to server
 clientSocket = serverConnect(hostArg, serverPortArg)
 
 # Send command, file name and data port # to server
+# depending on the number of arguments from command line
 if len(sys.argv) < 5:
     print("Not enough arguments")
 elif len(sys.argv) == 5:
@@ -61,21 +87,18 @@ elif len(sys.argv) == 6:
 else:
     print("Incorrect number of arguments")
 
-# Receive either INVALID COMMAND or READY message
-# READY means the data port is ready for connections
-readyMsg = ""
-readyMsg = clientSocket.recv(1024).decode()
-if readyMsg == "INVALID COMMAND":
-    print(readyMsg)
-    sys.exit("Exiting Program")
-while readyMsg != "READY":
-    readyMsg = clientSocket.recv(1024)
-print(readyMsg.decode())
+confirmCommand(clientSocket)
 
 # Connect to Data Socket
 dataSocket = serverConnect(hostArg, dataPortArg)
-dataMsg = dataSocket.recv(1024)
-print(dataMsg.decode())
+
+if commandArg == "-l":
+    dataMsg = dataSocket.recv(1024)
+    print(dataMsg.decode())
+elif commandArg == "-g":
+    # Run readSock
+
+    # write buffer to file in current dir
 
 dataSocket.close()
 clientSocket.close()

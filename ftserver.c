@@ -15,11 +15,14 @@
 #include <netinet/in.h>
 #include <netdb.h>
 
+#define FILENAME_SIZE 256
+#define BUFF_SIZE 70000
+
 int serverSetup(int userPort);
 void receiveCommand(int controlSock);
 int dataSocketSetup(int userPort, int controlSock);
 void sendDirectory(int dataSock);
-void transferFile(int dataSock);
+void transferFile(char* fileName, int dataSock);
 void error(const char *msg);
 
 int main(int argc, char *argv[])
@@ -42,7 +45,7 @@ int main(int argc, char *argv[])
 	while (1)
 	{
 		listen(serverSocket, 5);
-		printf("Server is ready to receive\n");
+		printf("Server is ready to receive ...\n");
 		clilen = sizeof(cli_addr);
 		connectionSocket = accept(serverSocket,
 				(struct sockaddr *) &cli_addr, &clilen);
@@ -100,9 +103,10 @@ void receiveCommand(int controlSock)
 	int userPort = 0;
 	int dataSocket = 0;
 	char* strFrag;
-	char strArray[3][30];
+	char strArray[3][FILENAME_SIZE];
 	char clientCommand[100];
 	char errorMsg[30] = "INVALID COMMAND";
+	char fileName[FILENAME_SIZE];
 
 	// Receive command string from client
 	memset(clientCommand, 0, sizeof(clientCommand));
@@ -120,10 +124,11 @@ void receiveCommand(int controlSock)
 		i++;
 	}
 
-	// Get the data port #
+	// Get the data port # and file name (if exists)
 	if (i == 2)
 		userPort = atoi(strArray[1]);
 	else
+		strcpy(fileName, strArray[1]);
 		userPort = atoi(strArray[2]);
 
 	// Open the data socket and execute the command
@@ -136,7 +141,7 @@ void receiveCommand(int controlSock)
 	else if (strcmp(strArray[0], "-g") == 0)
 	{
 		dataSocket = dataSocketSetup(userPort, controlSock);
-		transferFile(dataSocket);
+		transferFile(fileName, dataSocket);
 	}
 	else
 	{
@@ -176,29 +181,59 @@ int dataSocketSetup(int userPort, int controlSock)
 	return conSocket;
 }
 
+/*********************************************************************
+ ** Function: sendDirectory
+ ** Description:
+ **
+ ** Parameters:
+ ** Returns:
+ *********************************************************************/
 void sendDirectory(int dataSock)
 {
 	char msg[50] = "Sending directory on data port!";
-	char tempBuff[256];
+	char tempBuff[FILENAME_SIZE];
 	char directoryBuff[500];
-	FILE *fp = popen("ls","r");
-
+	FILE* filePtr = popen("ls","r");
 	directoryBuff[0] = '\0';
-	while (fgets(tempBuff, 256, fp) != NULL)
-	{
-	  printf("LS->%s", tempBuff);
-	  strcat(directoryBuff, tempBuff);
-	}
-	pclose(fp);
+
+	// Read directory contents and store in directoryBuff
+	while (fgets(tempBuff, FILENAME_SIZE, filePtr) != NULL)
+		strcat(directoryBuff, tempBuff);
+	pclose(filePtr);
 	printf("%s", directoryBuff);
 
+	// Send directory contents
 	send(dataSock, directoryBuff, strlen(directoryBuff), 0);
 	close(dataSock);
 }
 
-void transferFile(int dataSock)
+/*********************************************************************
+ ** Function: transferFile
+ ** Description:
+ **
+ ** Parameters:
+ ** Returns:
+ *********************************************************************/
+void transferFile(char* fileName, int dataSock)
 {
+	FILE* filePtr;
 	char msg[50] = "Sending file on data port!";
+	char txtBuffer[BUFF_SIZE];
+
+	// Read the file into buffer
+	filePtr = fopen(fileName, "r");
+   if (filePtr == NULL)
+   {
+		fprintf(stderr, "Could not open file\n");
+		exit(1);
+   }
+   bzero(txtBuffer, BUFF_SIZE);
+   fgets(txtBuffer, BUFF_SIZE, filePtr);
+   fclose(filePtr);
+
+	printf("buff: %s", txtBuffer);
+
+	// run writeSock
 
 	send(dataSock, msg, strlen(msg), 0);
 	close(dataSock);
