@@ -179,20 +179,21 @@ int dataSocketSetup(int userPort, int controlSock)
 void sendDirectory(int dataSock)
 {
 	char msg[50] = "Sending directory on data port!";
-
-	send(dataSock, msg, strlen(msg), 0);
-	close(dataSock);
-
-	char buff[BUFSIZ];
-	char bigBuffer[500];
+	char tempBuff[256];
+	char directoryBuff[500];
 	FILE *fp = popen("ls","r");
-	while ( fgets( buff, BUFSIZ, fp ) != NULL )
+
+	directoryBuff[0] = '\0';
+	while (fgets(tempBuff, 256, fp) != NULL)
 	{
-	  printf("LS->%s", buff );
-	  strcat(bigBuffer, buff);
+	  printf("LS->%s", tempBuff);
+	  strcat(directoryBuff, tempBuff);
 	}
 	pclose(fp);
-	printf("buff: %s", bigBuffer);
+	printf("%s", directoryBuff);
+
+	send(dataSock, directoryBuff, strlen(directoryBuff), 0);
+	close(dataSock);
 }
 
 void transferFile(int dataSock)
