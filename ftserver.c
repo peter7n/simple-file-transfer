@@ -218,7 +218,7 @@ void sendDirectory(int dataSock)
 void transferFile(char* fileName, int dataSock)
 {
 	FILE* filePtr;
-	char msg[50] = "Sending file on data port!";
+	char confirm[15];
 	char intToStr[10];
 	char tempBuffer[BUFF_SIZE];
 	char textBuffer[BUFF_SIZE];
@@ -241,18 +241,16 @@ void transferFile(char* fileName, int dataSock)
 
 	// Send the data size of the file to the client
 	dataSizeNum = strlen(textBuffer);
-	// int convertedNum;
-	// convertedNum = htonl(dataSizeNum);
 	sprintf(intToStr, "%d", dataSizeNum);	// convert to string
    returnStatus = send(dataSock, intToStr, sizeof(intToStr), 0);
    if (returnStatus < 0)
    	error("ERROR writing data size");
 
-	char confirm[5];
+	// Receive confirmation from client before writing
 	memset(confirm, 0, 5);
 	recv(dataSock, confirm, sizeof(confirm), 0);
 	printf("%s\n", confirm);
-	if (strcmp(confirm, "YES") == 0)
+	if (strcmp(confirm, "SIZE RECEIVED") == 0)
 	{
 		printf("WRITING\n");
 	   // Send the file contents to the client

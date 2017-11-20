@@ -69,15 +69,39 @@ def confirmCommand(clientSock):
 # Parameters:
 # Returns:
 #  ==================================================================
-def readSocket(dataSock, buffz, size):
+def readSocket(dataSock, buff, size):
     while True:
         data = dataSock.recv(4096)
-        buffz += data
-        if len(buffz) == size + 5:
-            print("buffer length == size")
+        buff += data
+        if len(buff) == size + 5:
             break
-    print("returning buffer contents")
-    return buffz
+    return buff
+
+# ==================================================================
+# Function: executeCommand
+# Description:
+#
+# Parameters:
+# Returns:
+#  ==================================================================
+def executeCommand(command, dataSock):
+    # Get data to execute the specified command
+    if commandArg == "-l":
+        dirContents = dataSock.recv(4096)
+        print(dirContents.decode())
+    elif commandArg == "-g":
+        # Receive file size from server
+        fileSize = dataSock.recv(5)
+        fileSizeInt = int(filter(str.isdigit, fileSize))
+        print(fileSizeInt)
+        sizeConfirm = "SIZE RECEIVED"
+        dataSock.send(sizeConfirm.encode())
+        # Receive file contents from server
+        txtBuffer = ""
+        txtBuffer = readSocket(dataSock, txtBuffer, fileSizeInt)
+        print(len(txtBuffer))
+        print(txtBuffer)
+        # write buffer to file in current dir
 
 # ==================================================================
 # Main Program
@@ -109,23 +133,7 @@ confirmCommand(clientSocket)
 # Connect to Data Socket
 dataSocket = serverConnect(hostArg, dataPortArg)
 
-if commandArg == "-l":
-    dirContents = dataSocket.recv(4096)
-    print(dirContents.decode())
-elif commandArg == "-g":
-    fileSize = dataSocket.recv(5)
-    fileSizeInt = int(filter(str.isdigit, fileSize))
-    print(fileSizeInt)
-    print("xxxxxxxxxx\n")
-    conf = "YES"
-    dataSocket.send(conf.encode())
-
-    buffx = ""
-    buffx = readSocket(dataSocket, buffx, fileSizeInt)
-    print(len(buffx))
-    print(buffx)
-    print("BACK IN MAIN")
-    # write buffer to file in current dir
+executeCommand(commandArg, dataSocket)
 
 dataSocket.close()
 clientSocket.close()
