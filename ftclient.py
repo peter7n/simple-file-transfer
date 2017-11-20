@@ -69,9 +69,15 @@ def confirmCommand(clientSock):
 # Parameters:
 # Returns:
 #  ==================================================================
-def readSocket(dataSock, buffer):
+def readSocket(dataSock, buffz, size):
     while True:
-        print("")
+        data = dataSock.recv(4096)
+        buffz += data
+        if len(buffz) == size + 5:
+            print("buffer length == size")
+            break
+    print("returning buffer contents")
+    return buffz
 
 # ==================================================================
 # Main Program
@@ -104,14 +110,21 @@ confirmCommand(clientSocket)
 dataSocket = serverConnect(hostArg, dataPortArg)
 
 if commandArg == "-l":
-    dirContents = dataSocket.recv(5000)
+    dirContents = dataSocket.recv(4096)
     print(dirContents.decode())
 elif commandArg == "-g":
-    fileSize = dataSocket.recv(5000)
-    print(fileSize.decode())
+    fileSize = dataSocket.recv(5)
+    fileSizeInt = int(filter(str.isdigit, fileSize))
+    print(fileSizeInt)
+    print("xxxxxxxxxx\n")
+    conf = "YES"
+    dataSocket.send(conf.encode())
 
-    # Run readSock
-
+    buffx = ""
+    buffx = readSocket(dataSocket, buffx, fileSizeInt)
+    print(len(buffx))
+    print(buffx)
+    print("BACK IN MAIN")
     # write buffer to file in current dir
 
 dataSocket.close()
