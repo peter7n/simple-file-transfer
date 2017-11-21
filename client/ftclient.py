@@ -8,6 +8,7 @@
 # ==================================================================
 
 import sys
+import os.path
 from socket import *
 
 # ==================================================================
@@ -86,17 +87,13 @@ def readSocket(dataSock, buff, size):
 # Returns:
 #  ==================================================================
 
-def executeCommand(command, dataSock):
-    # Get data to execute the specified command
-    # if command == "-l":
-    #     dirContents = dataSock.recv(4096)
-    #     print(dirContents.decode())
-    # elif command == "-g":
+def receiveData(command, dataSock):
     # Receive file size from server
     fileSize = dataSock.recv(5)
     fileSizeInt = int(filter(str.isdigit, fileSize))
     print(fileSizeInt)
-    sizeConfirm = "SIZE RECEIVED"
+    # Send confirmation to server that size was received
+    sizeConfirm = "SIZE OK"
     dataSock.send(sizeConfirm.encode())
     # Receive file contents from server
     txtBuffer = ""
@@ -116,8 +113,9 @@ clientSocket = serverConnect(hostArg, serverPortArg)
 
 # Send command, file name and data port # to server
 # depending on the number of arguments from command line
-if len(sys.argv) < 5:
-    print("Not enough arguments")
+if len(sys.argv) < 5 or len(sys.argv) > 6:
+    print("Invalid number of arguments")
+    sys.exit("Exiting Program")
 elif len(sys.argv) == 5:
     dataPortArg = sys.argv[4]
     sendCommand(commandArg, "", dataPortArg, clientSocket)
@@ -133,15 +131,22 @@ confirmCommand(clientSocket)
 # Connect to Data Socket
 dataSocket = serverConnect(hostArg, dataPortArg)
 
-returnedData = executeCommand(commandArg, dataSocket)
+# Get either directory listing or file data from server
+returnedData = receiveData(commandArg, dataSocket)
 
+# Execute the specified command
 if commandArg == "-l":
     print(returnedData)
 elif commandArg == "-g":
-    #write buffer to file in current directory
+    # Check if file exists in current directory
+    if os.path.isfile(fileArg):
+        print("File already exists")
+        sys.exit("Exiting Program")
+    # Write buffer to file in the current directory
     fileTrans = open(fileArg, "w")
     fileTrans.write(returnedData)
     fileTrans.close()
+    print("Transfer complete")
 else:
     print("Invalid command")
 

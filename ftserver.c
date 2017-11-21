@@ -21,7 +21,6 @@
 int serverSetup(int userPort);
 void receiveCommand(int controlSock);
 int dataSocketSetup(int userPort, int controlSock);
-void sendDirectory(int dataSock);
 void executeCommand(char* command, char* fileName, int dataSock);
 void writeSocket(int dataSock, char* buffer);
 void error(const char *msg);
@@ -187,32 +186,6 @@ int dataSocketSetup(int userPort, int controlSock)
 }
 
 /*********************************************************************
- ** Function: sendDirectory
- ** Description:
- **
- ** Parameters:
- ** Returns:
- *********************************************************************/
-void sendDirectory(int dataSock)
-{
-	char msg[50] = "Sending directory on data port!";
-	char tempDirBuff[FILENAME_SIZE];
-	char directoryBuff[500];
-	FILE* dirFilePtr = popen("ls","r");
-	directoryBuff[0] = '\0';
-
-	// Read directory contents and store in directoryBuff
-	while (fgets(tempDirBuff, FILENAME_SIZE, dirFilePtr) != NULL)
-		strcat(directoryBuff, tempDirBuff);
-	pclose(dirFilePtr);
-	printf("%s", directoryBuff);
-
-	// Send directory contents
-	send(dataSock, directoryBuff, strlen(directoryBuff), 0);
-	close(dataSock);
-}
-
-/*********************************************************************
  ** Function: executeCommand
  ** Description:
  **
@@ -232,6 +205,7 @@ void executeCommand(char* command, char* fileName, int dataSock)
 	int dataSizeNum = 0;
 	int returnStatus = 0;
 
+	// Command received: get directory contents
 	if (strcmp(command, "-l") == 0)
 	{
 		textBuffer[0] = '\0';
@@ -243,21 +217,30 @@ void executeCommand(char* command, char* fileName, int dataSock)
 		pclose(dirFilePtr);
 		printf("%s", textBuffer);
 	}
+	// Command received: get file
 	else if (strcmp(command, "-g") == 0)
 	{
-		// Read the file into buffer
-		filePtr = fopen(fileName, "r");
-		if (filePtr == NULL)
+		// Check if file exists in current directory
+		if (access(fileName, F_OK) != -1)
 		{
-			fprintf(stderr, "Could not open file\n");
-			exit(1);
+			// Read the file into buffer
+			filePtr = fopen(fileName, "r");
+			if (filePtr == NULL)
+			{
+				fprintf(stderr, "Could not open file\n");
+				exit(1);
+			}
+			bzero(textBuffer, BUFF_SIZE);
+			while (fgets(tempBuffer, BUFF_SIZE, filePtr))
+				strcat(textBuffer, tempBuffer);
+			fclose(filePtr);
 		}
-		bzero(textBuffer, BUFF_SIZE);
-		while (fgets(tempBuffer, BUFF_SIZE, filePtr))
-			strcat(textBuffer, tempBuffer);
-		fclose(filePtr);
-
-		printf("%s", textBuffer);
+		else
+		{
+		    // file doesn't exist
+			 close(dataSock);
+			 error("File not found");
+		}
 	}
 	else
 	{
@@ -275,14 +258,17 @@ void executeCommand(char* command, char* fileName, int dataSock)
 	// Receive confirmation from client before writing
 	memset(confirm, 0, 5);
 	recv(dataSock, confirm, sizeof(confirm), 0);
-	printf("%s\n", confirm);
-	if (strcmp(confirm, "SIZE RECEIVED") == 0)
+
+	if (strcmp(confirm, "SIZE OK") == 0)
 	{
+		printf("%s\n", confirm);
 		printf("WRITING\n");
 	   // Send the file contents to the client
 	   writeSocket(dataSock, textBuffer);
 		printf("finished WRITING\n");
 	}
+	else
+		printf("Size not received by client\n");
 
 	close(dataSock);
 }
@@ -314,7 +300,7 @@ void writeSocket(int dataSock, char* buffer)
       index = totalBytesWrit + 1;
       tempIndex = 0;
       do
-      // Copy remaining data to be written until temp buffer
+      // Copy remaining data to be written into temp buffer
       {
         tempBuffer[tempIndex] = buffer[index];
         index++;
