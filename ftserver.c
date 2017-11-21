@@ -129,8 +129,10 @@ void receiveCommand(int controlSock)
 	if (i == 2)
 		userPort = atoi(strArray[1]);
 	else
+	{
 		strcpy(fileName, strArray[1]);
 		userPort = atoi(strArray[2]);
+	}
 
 	// Open the data socket and execute the command
 	// Otherwise send Invalid Command message
