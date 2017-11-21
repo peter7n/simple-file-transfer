@@ -86,10 +86,10 @@ def readSocket(dataSock, buff, size):
 #  ==================================================================
 def executeCommand(command, dataSock):
     # Get data to execute the specified command
-    if commandArg == "-l":
+    if command == "-l":
         dirContents = dataSock.recv(4096)
         print(dirContents.decode())
-    elif commandArg == "-g":
+    elif command == "-g":
         # Receive file size from server
         fileSize = dataSock.recv(5)
         fileSizeInt = int(filter(str.isdigit, fileSize))
@@ -100,8 +100,10 @@ def executeCommand(command, dataSock):
         txtBuffer = ""
         txtBuffer = readSocket(dataSock, txtBuffer, fileSizeInt)
         print(len(txtBuffer))
-        print(txtBuffer)
-        # write buffer to file in current dir
+        return txtBuffer
+    else:
+        print("INVALID COMMAND")
+
 
 # ==================================================================
 # Main Program
@@ -133,7 +135,13 @@ confirmCommand(clientSocket)
 # Connect to Data Socket
 dataSocket = serverConnect(hostArg, dataPortArg)
 
-executeCommand(commandArg, dataSocket)
+result = executeCommand(commandArg, dataSocket)
+
+print(result)
+
+# write buffer to file in current dir
+# fileWrite = open(fileArg, "w")
+# fileWrite.write()
 
 dataSocket.close()
 clientSocket.close()

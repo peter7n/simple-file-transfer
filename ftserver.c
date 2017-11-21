@@ -22,7 +22,7 @@ int serverSetup(int userPort);
 void receiveCommand(int controlSock);
 int dataSocketSetup(int userPort, int controlSock);
 void sendDirectory(int dataSock);
-void transferFile(char* fileName, int dataSock);
+void executeCommand(char* command, char* fileName, int dataSock);
 void writeSocket(int dataSock, char* buffer);
 void error(const char *msg);
 
@@ -137,12 +137,14 @@ void receiveCommand(int controlSock)
 	if (strcmp(strArray[0], "-l") == 0)
 	{
 		dataSocket = dataSocketSetup(userPort, controlSock);
-		sendDirectory(dataSocket);
+		// sendDirectory(dataSocket);
+		executeCommand(strArray[0], NULL, dataSocket);
 	}
 	else if (strcmp(strArray[0], "-g") == 0)
 	{
 		dataSocket = dataSocketSetup(userPort, controlSock);
-		transferFile(fileName, dataSocket);
+		// transferFile(fileName, dataSocket);
+		executeCommand(strArray[0], fileName, dataSocket);
 	}
 	else
 	{
@@ -192,15 +194,15 @@ int dataSocketSetup(int userPort, int controlSock)
 void sendDirectory(int dataSock)
 {
 	char msg[50] = "Sending directory on data port!";
-	char tempBuff[FILENAME_SIZE];
+	char tempDirBuff[FILENAME_SIZE];
 	char directoryBuff[500];
-	FILE* filePtr = popen("ls","r");
+	FILE* dirFilePtr = popen("ls","r");
 	directoryBuff[0] = '\0';
 
 	// Read directory contents and store in directoryBuff
-	while (fgets(tempBuff, FILENAME_SIZE, filePtr) != NULL)
-		strcat(directoryBuff, tempBuff);
-	pclose(filePtr);
+	while (fgets(tempDirBuff, FILENAME_SIZE, dirFilePtr) != NULL)
+		strcat(directoryBuff, tempDirBuff);
+	pclose(dirFilePtr);
 	printf("%s", directoryBuff);
 
 	// Send directory contents
@@ -209,15 +211,18 @@ void sendDirectory(int dataSock)
 }
 
 /*********************************************************************
- ** Function: transferFile
+ ** Function: executeCommand
  ** Description:
  **
  ** Parameters:
  ** Returns:
  *********************************************************************/
-void transferFile(char* fileName, int dataSock)
+void executeCommand(char* command, char* fileName, int dataSock)
 {
+	FILE* dirFilePtr;
 	FILE* filePtr;
+	char tempDirBuff[FILENAME_SIZE];
+	char directoryBuff[500];
 	char confirm[15];
 	char intToStr[10];
 	char tempBuffer[BUFF_SIZE];
@@ -225,19 +230,38 @@ void transferFile(char* fileName, int dataSock)
 	int dataSizeNum = 0;
 	int returnStatus = 0;
 
-	// Read the file into buffer
-	filePtr = fopen(fileName, "r");
-   if (filePtr == NULL)
-   {
-		fprintf(stderr, "Could not open file\n");
-		exit(1);
-   }
-   bzero(textBuffer, BUFF_SIZE);
-   while (fgets(tempBuffer, BUFF_SIZE, filePtr))
-		strcat(textBuffer, tempBuffer);
-   fclose(filePtr);
+	if (strcmp(command, "-l") == 0)
+	{
+		textBuffer[0] = '\0';
+		dirFilePtr = popen("ls","r");
 
-	printf("%s", textBuffer);
+		// Read directory contents and store in textBuffer
+		while (fgets(tempDirBuff, FILENAME_SIZE, dirFilePtr) != NULL)
+			strcat(textBuffer, tempDirBuff);
+		pclose(dirFilePtr);
+		printf("%s", textBuffer);
+	}
+	else if (strcmp(command, "-g") == 0)
+	{
+		// Read the file into buffer
+		filePtr = fopen(fileName, "r");
+		if (filePtr == NULL)
+		{
+			fprintf(stderr, "Could not open file\n");
+			exit(1);
+		}
+		bzero(textBuffer, BUFF_SIZE);
+		while (fgets(tempBuffer, BUFF_SIZE, filePtr))
+			strcat(textBuffer, tempBuffer);
+		fclose(filePtr);
+
+		printf("%s", textBuffer);
+	}
+	else
+	{
+		printf("INVALID COMMAND\n");
+		return;
+	}
 
 	// Send the data size of the file to the client
 	dataSizeNum = strlen(textBuffer);
