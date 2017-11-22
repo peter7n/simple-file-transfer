@@ -52,11 +52,11 @@ def sendCommand(command, fileName, dataPort, clientSock):
 #  ==================================================================
 
 def confirmCommand(clientSock):
-    # Receive either INVALID COMMAND or READY message
-    # READY means the data port is ready for connection
+    # Receive either error message or READY message
+    # READY means the data port is ready to connect or send
     readyMsg = ""
     readyMsg = clientSock.recv(1024).decode()
-    if readyMsg == "INVALID COMMAND":
+    if readyMsg == "INVALID COMMAND" or readyMsg == "FILE NOT FOUND":
         print(readyMsg)
         sys.exit("Exiting Program")
     while readyMsg != "READY":
@@ -126,6 +126,7 @@ elif len(sys.argv) == 6:
 else:
     print("Incorrect number of arguments")
 
+# Get confirmation from server that command is valid
 confirmCommand(clientSocket)
 
 # Connect to Data Socket

@@ -21,7 +21,8 @@
 int serverSetup(int userPort);
 void receiveCommand(int controlSock);
 int dataSocketSetup(int userPort, int controlSock);
-void executeCommand(char* command, char* fileName, int dataSock);
+void executeCommand(char* command, char* fileName,
+		int dataSock, int controlSock);
 void writeSocket(int dataSock, char* buffer);
 void error(const char *msg);
 
@@ -106,6 +107,7 @@ void receiveCommand(int controlSock)
 	char strArray[3][FILENAME_SIZE];
 	char clientCommand[100];
 	char errorMsg[30] = "INVALID COMMAND";
+	char errorMsg2[30] = "FILE NOT FOUND";
 	char fileName[FILENAME_SIZE];
 
 	// Receive command string from client
@@ -138,14 +140,20 @@ void receiveCommand(int controlSock)
 	if (strcmp(strArray[0], "-l") == 0)
 	{
 		dataSocket = dataSocketSetup(userPort, controlSock);
-		// sendDirectory(dataSocket);
-		executeCommand(strArray[0], NULL, dataSocket);
+		executeCommand(strArray[0], NULL, dataSocket, controlSock);
 	}
 	else if (strcmp(strArray[0], "-g") == 0)
 	{
-		dataSocket = dataSocketSetup(userPort, controlSock);
-		// transferFile(fileName, dataSocket);
-		executeCommand(strArray[0], fileName, dataSocket);
+		if (access(fileName, F_OK) != -1)
+		{
+			dataSocket = dataSocketSetup(userPort, controlSock);
+			executeCommand(strArray[0], fileName, dataSocket, controlSock);
+		}
+		else
+		{
+			printf("FILE NOT FOUND\n");
+			send(controlSock, errorMsg2, strlen(errorMsg2), 0);
+		}
 	}
 	else
 	{
@@ -192,7 +200,8 @@ int dataSocketSetup(int userPort, int controlSock)
  ** Parameters:
  ** Returns:
  *********************************************************************/
-void executeCommand(char* command, char* fileName, int dataSock)
+void executeCommand(char* command, char* fileName,
+		int dataSock, int controlSock)
 {
 	FILE* dirFilePtr;
 	FILE* filePtr;
@@ -202,6 +211,8 @@ void executeCommand(char* command, char* fileName, int dataSock)
 	char intToStr[10];
 	char tempBuffer[BUFF_SIZE];
 	char textBuffer[BUFF_SIZE];
+	char errorMsg[30] = "FILE NOT FOUND";
+	char readyMsg[30] = "READY";
 	int dataSizeNum = 0;
 	int returnStatus = 0;
 
@@ -220,27 +231,17 @@ void executeCommand(char* command, char* fileName, int dataSock)
 	// Command received: get file
 	else if (strcmp(command, "-g") == 0)
 	{
-		// Check if file exists in current directory
-		if (access(fileName, F_OK) != -1)
+		// Read the file into buffer
+		filePtr = fopen(fileName, "r");
+		if (filePtr == NULL)
 		{
-			// Read the file into buffer
-			filePtr = fopen(fileName, "r");
-			if (filePtr == NULL)
-			{
-				fprintf(stderr, "Could not open file\n");
-				exit(1);
-			}
-			bzero(textBuffer, BUFF_SIZE);
-			while (fgets(tempBuffer, BUFF_SIZE, filePtr))
-				strcat(textBuffer, tempBuffer);
-			fclose(filePtr);
+			fprintf(stderr, "Could not open file\n");
+			exit(1);
 		}
-		else
-		{
-		    // file doesn't exist
-			 close(dataSock);
-			 error("File not found");
-		}
+		bzero(textBuffer, BUFF_SIZE);
+		while (fgets(tempBuffer, BUFF_SIZE, filePtr))
+			strcat(textBuffer, tempBuffer);
+		fclose(filePtr);
 	}
 	else
 	{
