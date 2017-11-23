@@ -91,7 +91,6 @@ def receiveData(command, dataSock):
     # Receive file size from server
     fileSize = dataSock.recv(5)
     fileSizeInt = int(filter(str.isdigit, fileSize))
-    print(fileSizeInt)
     # Send confirmation to server that size was received
     sizeConfirm = "SIZE OK"
     dataSock.send(sizeConfirm.encode())
@@ -106,7 +105,12 @@ def receiveData(command, dataSock):
 
 # Get server name, port # and command from command line
 hostArg = sys.argv[1]
-serverPortArg = sys.argv[2]
+
+if sys.argv[2].isdigit():
+    serverPortArg = sys.argv[2]
+else:
+    sys.exit("Server port must be a number")
+
 commandArg = sys.argv[3]
 # Connect to server
 clientSocket = serverConnect(hostArg, serverPortArg)
@@ -115,16 +119,20 @@ clientSocket = serverConnect(hostArg, serverPortArg)
 # depending on the number of arguments from command line
 if len(sys.argv) < 5 or len(sys.argv) > 6:
     print("Invalid number of arguments")
-    sys.exit("Exiting Program")
+
 elif len(sys.argv) == 5:
-    dataPortArg = sys.argv[4]
+    if sys.argv[4].isdigit():
+        dataPortArg = sys.argv[4]
+    else:
+        sys.exit("Data port must be a number")
     sendCommand(commandArg, "", dataPortArg, clientSocket)
 elif len(sys.argv) == 6:
     fileArg = sys.argv[4]
-    dataPortArg = sys.argv[5]
+    if sys.argv[5].isdigit():
+        dataPortArg = sys.argv[5]
+    else:
+        sys.exit("Data port must be a number")
     sendCommand(commandArg, fileArg, dataPortArg, clientSocket)
-else:
-    print("Incorrect number of arguments")
 
 # Get confirmation from server that command is valid
 confirmCommand(clientSocket)
@@ -141,8 +149,7 @@ if commandArg == "-l":
 elif commandArg == "-g":
     # Check if file exists in current directory
     if os.path.isfile(fileArg):
-        print("File already exists")
-        sys.exit("Exiting Program")
+        sys.exit("File already exists")
     # Write buffer to file in the current directory
     fileTrans = open(fileArg, "w")
     fileTrans.write(returnedData)

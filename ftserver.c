@@ -14,6 +14,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h>
+#include <ctype.h>
 
 #define FILENAME_SIZE 256
 #define BUFF_SIZE 70000
@@ -24,6 +25,7 @@ int dataSocketSetup(int userPort, int controlSock);
 void executeCommand(char* command, char* fileName,
 		int dataSock, int controlSock);
 void writeSocket(int dataSock, char* buffer);
+int isNumber(char* str);
 void error(const char *msg);
 
 int main(int argc, char *argv[])
@@ -33,12 +35,17 @@ int main(int argc, char *argv[])
 	socklen_t clilen;    	// size of client address
 	struct sockaddr_in cli_addr;
 
-	// Check if user provided a valid port
-	if (argc < 2)
+	// Check if user provided a valid port #
+	if (argc < 2 || argc > 2)
    {
-		fprintf(stderr, "ERROR, no port provided\n");
+		fprintf(stderr, "ERROR: wrong number of arguments - please provide port number\n");
 		exit(1);
    }
+	else if (!isNumber(argv[1]))
+		{
+			fprintf(stderr, "ERROR: not a number\n");
+			exit(1);
+		}
 
 	// Initialize Control "welcome" socket
 	serverSocket = serverSetup(atoi(argv[1]));
@@ -113,7 +120,6 @@ void receiveCommand(int controlSock)
 	// Receive command string from client
 	memset(clientCommand, 0, sizeof(clientCommand));
 	recv(controlSock, clientCommand, sizeof(clientCommand), 0);
-	printf("client command: %s\n", clientCommand);
 
 	// Parse the string for commmand, (filename), port#
 	strFrag = strtok(clientCommand, " ");
@@ -121,7 +127,6 @@ void receiveCommand(int controlSock)
 	while (strFrag != NULL)
 	{
 		strcpy(strArray[i], strFrag);
-		printf("%s\n", strArray[i]);
 		strFrag = strtok(NULL, " ");
 		i++;
 	}
@@ -311,7 +316,24 @@ void writeSocket(int dataSock, char* buffer)
       bytesWrit = write(dataSock, tempBuffer, strlen(tempBuffer));
     }
   }
-  printf("totalbytesWrit: %d\n", totalBytesWrit);
+}
+
+/*********************************************************************
+ ** isNumber
+ ** Description:
+ ** Parameters:
+ *********************************************************************/
+int isNumber(char* str)
+{
+	int i = 0;
+
+	while(str[i] != '\0')
+	{
+		if (!isdigit(str[i]))
+			return 0;
+		i++;
+	}
+	return 1;
 }
 
 /*********************************************************************
