@@ -52,7 +52,7 @@ int main(int argc, char *argv[])
 	while (1)
 	{
 		listen(serverSocket, 5);
-		printf("Server is ready to receive ...\n");
+		printf("Server is ready to receive on %s\n", argv[1]);
 		clilen = sizeof(cli_addr);
 		connectionSocket = accept(serverSocket,
 				(struct sockaddr *) &cli_addr, &clilen);
@@ -184,7 +184,7 @@ int dataSocketSetup(int userPort, int controlSock)
 	// Initialize the Data "welcome" socket
 	dataSocket = serverSetup(userPort);
 	listen(dataSocket, 1);
-	printf("Connecting to Data Port ...\n");
+	printf("Data Port is ready\n");
 
 	// Send READY message for client to connect to Data socket
 	send(controlSock, readyMsg, strlen(readyMsg), 0);
@@ -227,7 +227,6 @@ void executeCommand(char* command, char* fileName, int dataSock)
 		while (fgets(tempDirBuff, FILENAME_SIZE, dirFilePtr) != NULL)
 			strcat(textBuffer, tempDirBuff);
 		pclose(dirFilePtr);
-		printf("%s", textBuffer);
 	}
 	// Command received: get file
 	else if (strcmp(command, "-g") == 0)
@@ -263,11 +262,8 @@ void executeCommand(char* command, char* fileName, int dataSock)
 
 	if (strcmp(confirm, "SIZE OK") == 0)
 	{
-		printf("%s\n", confirm);
-		printf("WRITING\n");
 	   // Send the file contents to the client
 	   writeSocket(dataSock, textBuffer);
-		printf("finished WRITING\n");
 	}
 	else
 		printf("Size not received by client\n");

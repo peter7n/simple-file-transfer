@@ -61,7 +61,6 @@ def confirmCommand(clientSock):
         sys.exit("Exiting Program")
     while readyMsg != "READY":
         readyMsg = clientSock.recv(1024)
-    print(readyMsg.decode())
 
 # ==================================================================
 # Function: readSocket
