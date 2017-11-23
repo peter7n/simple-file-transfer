@@ -80,14 +80,14 @@ def readSocket(dataSock, buff, size):
     return buff
 
 # ==================================================================
-# Function: executeCommand
+# Function: receiveData
 # Description:
 #
 # Parameters:
 # Returns:
 #  ==================================================================
 
-def receiveData(command, dataSock):
+def receiveData(dataSock):
     # Receive file size from server
     fileSize = dataSock.recv(5)
     fileSizeInt = int(filter(str.isdigit, fileSize))
@@ -98,6 +98,29 @@ def receiveData(command, dataSock):
     txtBuffer = ""
     txtBuffer = readSocket(dataSock, txtBuffer, fileSizeInt)
     return txtBuffer
+
+# ==================================================================
+# Function: executeCommand
+# Description:
+#
+# Parameters:
+# Returns:
+#  ==================================================================
+
+def executeCommand(command, fileName, data):
+    if command == "-l":
+        print(data)
+    elif command == "-g":
+        # Check if file exists in current directory
+        if os.path.isfile(fileName):
+            sys.exit("File already exists")
+        # Write buffer to file in the current directory
+        fileTrans = open(fileName, "w")
+        fileTrans.write(data)
+        fileTrans.close()
+        print("Transfer complete")
+    else:
+        print("Invalid command")
 
 # ==================================================================
 # Main Program
@@ -121,6 +144,7 @@ if len(sys.argv) < 5 or len(sys.argv) > 6:
     print("Invalid number of arguments")
 
 elif len(sys.argv) == 5:
+    fileArg = ""
     if sys.argv[4].isdigit():
         dataPortArg = sys.argv[4]
     else:
@@ -141,22 +165,10 @@ confirmCommand(clientSocket)
 dataSocket = serverConnect(hostArg, dataPortArg)
 
 # Get either directory listing or file data from server
-returnedData = receiveData(commandArg, dataSocket)
+returnedData = receiveData(dataSocket)
 
 # Execute the specified command
-if commandArg == "-l":
-    print(returnedData)
-elif commandArg == "-g":
-    # Check if file exists in current directory
-    if os.path.isfile(fileArg):
-        sys.exit("File already exists")
-    # Write buffer to file in the current directory
-    fileTrans = open(fileArg, "w")
-    fileTrans.write(returnedData)
-    fileTrans.close()
-    print("Transfer complete")
-else:
-    print("Invalid command")
+executeCommand(commandArg, fileArg, returnedData)
 
 dataSocket.close()
 clientSocket.close()

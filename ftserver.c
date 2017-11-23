@@ -22,8 +22,7 @@
 int serverSetup(int userPort);
 void receiveCommand(int controlSock);
 int dataSocketSetup(int userPort, int controlSock);
-void executeCommand(char* command, char* fileName,
-		int dataSock, int controlSock);
+void executeCommand(char* command, char* fileName, int dataSock);
 void writeSocket(int dataSock, char* buffer);
 int isNumber(char* str);
 void error(const char *msg);
@@ -145,14 +144,14 @@ void receiveCommand(int controlSock)
 	if (strcmp(strArray[0], "-l") == 0)
 	{
 		dataSocket = dataSocketSetup(userPort, controlSock);
-		executeCommand(strArray[0], NULL, dataSocket, controlSock);
+		executeCommand(strArray[0], NULL, dataSocket);
 	}
 	else if (strcmp(strArray[0], "-g") == 0)
 	{
 		if (access(fileName, F_OK) != -1)
 		{
 			dataSocket = dataSocketSetup(userPort, controlSock);
-			executeCommand(strArray[0], fileName, dataSocket, controlSock);
+			executeCommand(strArray[0], fileName, dataSocket);
 		}
 		else
 		{
@@ -205,8 +204,7 @@ int dataSocketSetup(int userPort, int controlSock)
  ** Parameters:
  ** Returns:
  *********************************************************************/
-void executeCommand(char* command, char* fileName,
-		int dataSock, int controlSock)
+void executeCommand(char* command, char* fileName, int dataSock)
 {
 	FILE* dirFilePtr;
 	FILE* filePtr;
@@ -216,8 +214,6 @@ void executeCommand(char* command, char* fileName,
 	char intToStr[10];
 	char tempBuffer[BUFF_SIZE];
 	char textBuffer[BUFF_SIZE];
-	char errorMsg[30] = "FILE NOT FOUND";
-	char readyMsg[30] = "READY";
 	int dataSizeNum = 0;
 	int returnStatus = 0;
 
