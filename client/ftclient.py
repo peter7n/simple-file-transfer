@@ -24,7 +24,7 @@ def serverConnect(userHost, userPort):
     serverPort = int(userPort)
     newSocket = socket(AF_INET, SOCK_STREAM)
     # Connect to server
-    print("Connecting ...")
+    print("Connecting to server on {}").format(userPort)
     newSocket.connect((serverName, serverPort))
     return newSocket
 
@@ -51,13 +51,13 @@ def sendCommand(command, fileName, dataPort, clientSock):
 # Returns:
 #  ==================================================================
 
-def confirmCommand(clientSock):
+def confirmCommand(clientSock, sPort):
     # Receive either error message or READY message
     # READY means the data port is ready to connect or send
     readyMsg = ""
     readyMsg = clientSock.recv(1024).decode()
     if readyMsg == "INVALID COMMAND" or readyMsg == "FILE NOT FOUND":
-        print(readyMsg)
+        print("Error received from {}: {}".format(sPort, readyMsg))
         sys.exit("Exiting Program")
     while readyMsg != "READY":
         readyMsg = clientSock.recv(1024)
@@ -106,10 +106,12 @@ def receiveData(dataSock):
 # Returns:
 #  ==================================================================
 
-def executeCommand(command, fileName, data):
+def executeCommand(command, fileName, data, dPort):
     if command == "-l":
+        print("Receiving directory contents from server on {}".format(dPort))
         print(data)
     elif command == "-g":
+        print("Receiving file {} from server on {}".format(fileName, dPort))
         # Check if file exists in current directory
         if os.path.isfile(fileName):
             sys.exit("File already exists")
@@ -121,19 +123,24 @@ def executeCommand(command, fileName, data):
     else:
         print("Invalid command")
 
+def validatePort(portArg):
+    if portArg.isdigit():
+        if int(portArg) <= 65535:
+            return portArg
+        else:
+            sys.exit("Port must be 65535 or under")
+    else:
+        sys.exit("Port must be a number")
+
 # ==================================================================
 # Main Program
 # ==================================================================
 
 # Get server name, port # and command from command line
 hostArg = sys.argv[1]
-
-if sys.argv[2].isdigit():
-    serverPortArg = sys.argv[2]
-else:
-    sys.exit("Server port must be a number")
-
+serverPortArg = validatePort(sys.argv[2])
 commandArg = sys.argv[3]
+
 # Connect to server
 clientSocket = serverConnect(hostArg, serverPortArg)
 
@@ -144,21 +151,15 @@ if len(sys.argv) < 5 or len(sys.argv) > 6:
 
 elif len(sys.argv) == 5:
     fileArg = ""
-    if sys.argv[4].isdigit():
-        dataPortArg = sys.argv[4]
-    else:
-        sys.exit("Data port must be a number")
+    dataPortArg = validatePort(sys.argv[4])
     sendCommand(commandArg, "", dataPortArg, clientSocket)
 elif len(sys.argv) == 6:
     fileArg = sys.argv[4]
-    if sys.argv[5].isdigit():
-        dataPortArg = sys.argv[5]
-    else:
-        sys.exit("Data port must be a number")
+    dataPortArg = validatePort(sys.argv[5])
     sendCommand(commandArg, fileArg, dataPortArg, clientSocket)
 
 # Get confirmation from server that command is valid
-confirmCommand(clientSocket)
+confirmCommand(clientSocket, serverPortArg)
 
 # Connect to Data Socket
 dataSocket = serverConnect(hostArg, dataPortArg)
@@ -167,7 +168,7 @@ dataSocket = serverConnect(hostArg, dataPortArg)
 returnedData = receiveData(dataSocket)
 
 # Execute the specified command
-executeCommand(commandArg, fileArg, returnedData)
+executeCommand(commandArg, fileArg, returnedData, dataPortArg)
 
 dataSocket.close()
 clientSocket.close()

@@ -22,7 +22,7 @@
 int serverSetup(int userPort);
 void receiveCommand(int controlSock);
 int dataSocketSetup(int userPort, int controlSock);
-void executeCommand(char* command, char* fileName, int dataSock);
+void executeCommand(char* command, char* fileName, int dataSock, int dPort);
 void writeSocket(int dataSock, char* buffer);
 int isNumber(char* str);
 void error(const char *msg);
@@ -40,11 +40,19 @@ int main(int argc, char *argv[])
 		fprintf(stderr, "ERROR: wrong number of arguments - please provide port number\n");
 		exit(1);
    }
-	else if (!isNumber(argv[1]))
+	else
+	{
+		if (!isNumber(argv[1]))
 		{
 			fprintf(stderr, "ERROR: not a number\n");
 			exit(1);
 		}
+		if (atoi(argv[1]) > 65535)
+		{
+			fprintf(stderr, "ERROR: port must be 65535 or under\n");
+			exit(1);
+		}
+	}
 
 	// Initialize Control "welcome" socket
 	serverSocket = serverSetup(atoi(argv[1]));
@@ -56,6 +64,7 @@ int main(int argc, char *argv[])
 		clilen = sizeof(cli_addr);
 		connectionSocket = accept(serverSocket,
 				(struct sockaddr *) &cli_addr, &clilen);
+		printf("Connecting to client\n");
 
 		receiveCommand(connectionSocket);
 
@@ -144,18 +153,18 @@ void receiveCommand(int controlSock)
 	if (strcmp(strArray[0], "-l") == 0)
 	{
 		dataSocket = dataSocketSetup(userPort, controlSock);
-		executeCommand(strArray[0], NULL, dataSocket);
+		executeCommand(strArray[0], NULL, dataSocket, userPort);
 	}
 	else if (strcmp(strArray[0], "-g") == 0)
 	{
 		if (access(fileName, F_OK) != -1)
 		{
 			dataSocket = dataSocketSetup(userPort, controlSock);
-			executeCommand(strArray[0], fileName, dataSocket);
+			executeCommand(strArray[0], fileName, dataSocket, userPort);
 		}
 		else
 		{
-			printf("FILE NOT FOUND\n");
+			printf("FILE %s NOT FOUND\n", fileName);
 			send(controlSock, errorMsg2, strlen(errorMsg2), 0);
 		}
 	}
@@ -184,7 +193,6 @@ int dataSocketSetup(int userPort, int controlSock)
 	// Initialize the Data "welcome" socket
 	dataSocket = serverSetup(userPort);
 	listen(dataSocket, 1);
-	printf("Data Port is ready\n");
 
 	// Send READY message for client to connect to Data socket
 	send(controlSock, readyMsg, strlen(readyMsg), 0);
@@ -193,6 +201,7 @@ int dataSocketSetup(int userPort, int controlSock)
 	// Accept connection on Data socket
 	conSocket = accept(dataSocket,
 			(struct sockaddr *) &cli_addr, &clilen);
+	printf("Connecting to data port on %d\n", userPort);
 
 	return conSocket;
 }
@@ -204,7 +213,7 @@ int dataSocketSetup(int userPort, int controlSock)
  ** Parameters:
  ** Returns:
  *********************************************************************/
-void executeCommand(char* command, char* fileName, int dataSock)
+void executeCommand(char* command, char* fileName, int dataSock, int dPort)
 {
 	FILE* dirFilePtr;
 	FILE* filePtr;
@@ -227,6 +236,7 @@ void executeCommand(char* command, char* fileName, int dataSock)
 		while (fgets(tempDirBuff, FILENAME_SIZE, dirFilePtr) != NULL)
 			strcat(textBuffer, tempDirBuff);
 		pclose(dirFilePtr);
+		printf("Sending directory contents to client on data port %d\n", dPort);
 	}
 	// Command received: get file
 	else if (strcmp(command, "-g") == 0)
@@ -242,6 +252,7 @@ void executeCommand(char* command, char* fileName, int dataSock)
 		while (fgets(tempBuffer, BUFF_SIZE, filePtr))
 			strcat(textBuffer, tempBuffer);
 		fclose(filePtr);
+		printf("Sending file %s to client on data port %d\n", fileName, dPort);
 	}
 	else
 	{
