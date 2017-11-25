@@ -3,8 +3,8 @@
 # Author: Peter Nguyen
 # Date: 11/26/17
 # CS 372-400
-# Description: Project 2 -
-#
+# Description: Project 2 - Client program for simple file transfer
+# application using two socket connections
 # ==================================================================
 
 import sys
@@ -13,12 +13,10 @@ from socket import *
 
 # ==================================================================
 # Function: serverConnect
-# Description:
-#
-# Parameters:
-# Returns:
+# Description: Takes a host and port #, connects to server and
+# returns the new socket
+# Parameters: userHost, userPort
 #  ==================================================================
-
 def serverConnect(userHost, userPort):
     serverName = userHost
     serverPort = int(userPort)
@@ -30,12 +28,10 @@ def serverConnect(userHost, userPort):
 
 # ==================================================================
 # Function: sendCommand
-# Description:
-#
-# Parameters:
-# Returns:
+# Description: Sends a command, optional filename and data port #
+# to the server as a continuous string
+# Parameters: command, fileName, dataPort, clientSock
 #  ==================================================================
-
 def sendCommand(command, fileName, dataPort, clientSock):
     if fileName == "":
         string = command + " " + dataPort
@@ -44,13 +40,11 @@ def sendCommand(command, fileName, dataPort, clientSock):
     clientSock.send(string.encode())
 
 # ==================================================================
-# Function: receiveReady
-# Description:
-#
-# Parameters:
-# Returns:
+# Function: confirmCommand
+# Description: Waits for confirmation from the server that command
+# is valid. Otherwise, prints the error message
+# Parameters: clientSock, sPort
 #  ==================================================================
-
 def confirmCommand(clientSock, sPort):
     # Receive either error message or READY message
     # READY means the data port is ready to connect or send
@@ -64,12 +58,10 @@ def confirmCommand(clientSock, sPort):
 
 # ==================================================================
 # Function: readSocket
-# Description:
-#
-# Parameters:
-# Returns:
+# Description: Reads from the data socket into the specified
+# buffer until the specified data size is read. Returns buffer
+# Parameters: dataSock, buff, size
 #  ==================================================================
-
 def readSocket(dataSock, buff, size):
     while True:
         data = dataSock.recv(4096)
@@ -80,12 +72,10 @@ def readSocket(dataSock, buff, size):
 
 # ==================================================================
 # Function: receiveData
-# Description:
-#
-# Parameters:
-# Returns:
+# Description: Receives the data size from the server and then
+# initiates data transfer. Returns buffer with received data
+# Parameters: dataSock
 #  ==================================================================
-
 def receiveData(dataSock):
     # Receive file size from server
     fileSize = dataSock.recv(5)
@@ -100,12 +90,11 @@ def receiveData(dataSock):
 
 # ==================================================================
 # Function: executeCommand
-# Description:
-#
-# Parameters:
-# Returns:
+# Description: Takes command as parameter and either prints the
+# received directory contents or writes the received file contents
+# to a file in the current directory
+# Parameters: command, fileName, data, dPort
 #  ==================================================================
-
 def executeCommand(command, fileName, data, dPort):
     if command == "-l":
         print("Receiving directory contents from server on {}".format(dPort))
@@ -123,6 +112,12 @@ def executeCommand(command, fileName, data, dPort):
     else:
         print("Invalid command")
 
+# ==================================================================
+# Function: validatePort
+# Description: Checks if provided port # is a number and in range.
+# If yes, returns the port #, otherwise childExitStatus
+# Parameters: portArg
+#  ==================================================================
 def validatePort(portArg):
     if portArg.isdigit():
         if int(portArg) <= 65535:

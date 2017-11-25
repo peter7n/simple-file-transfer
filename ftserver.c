@@ -3,7 +3,8 @@
  ** Author: Peter Nguyen
  ** Date: 11/26/17
  ** CS 372-400
- ** Description: Project 2 -
+ ** Description: Project 2 - Server program for simple file transfer
+ ** application using two socket connections
  *********************************************************************/
 
 #include <stdio.h>
@@ -76,10 +77,9 @@ int main(int argc, char *argv[])
 
 /*********************************************************************
  ** Function: serverSetup
- ** Description:
- **
- ** Parameters: char* userPort
- ** Returns: int, the new server socket
+ ** Description: Binds socket to a user-provided port number
+ ** and returns the the newly created server socket
+ ** Parameters: int userPort
  *********************************************************************/
 int serverSetup(int userPort)
 {
@@ -109,10 +109,10 @@ int serverSetup(int userPort)
 
 /*********************************************************************
  ** Function: receiveCommand
- ** Description:
- **
- ** Parameters:
- ** Returns:
+ ** Description: Control socket receives command, file name and
+ ** port # from client. Then either execute the command or send an
+ ** error message to client if invalid command or file not found
+ ** Parameters: int controlSock
  *********************************************************************/
 void receiveCommand(int controlSock)
 {
@@ -177,10 +177,9 @@ void receiveCommand(int controlSock)
 
 /*********************************************************************
  ** Function: dataSocketSetup
- ** Description:
- **
- ** Parameters:
- ** Returns:
+ ** Description: Creates the data socket and accepts the new
+ ** connection from the client
+ ** Parameters: int userPort, int ControlSock
  *********************************************************************/
 int dataSocketSetup(int userPort, int controlSock)
 {
@@ -208,10 +207,9 @@ int dataSocketSetup(int userPort, int controlSock)
 
 /*********************************************************************
  ** Function: executeCommand
- ** Description:
- **
- ** Parameters:
- ** Returns:
+ ** Description: Gets either the contents of the directory or the
+ ** requested file and sends them to the client
+ ** Parameters: char* command, char* fileName, int dataSock, int dPort
  *********************************************************************/
 void executeCommand(char* command, char* fileName, int dataSock, int dPort)
 {
@@ -285,7 +283,7 @@ void executeCommand(char* command, char* fileName, int dataSock, int dPort)
 /*********************************************************************
  ** writeSocket
  ** Description: Writes data to the specified socket from the
- ** specified buffer in "chunks" of 1000 bytes.
+ ** specified buffer
  ** Parameters: int dataSock, char* buffer
  *********************************************************************/
 void writeSocket(int dataSock, char* buffer)
@@ -323,8 +321,8 @@ void writeSocket(int dataSock, char* buffer)
 
 /*********************************************************************
  ** isNumber
- ** Description:
- ** Parameters:
+ ** Description: Returns 1 if the provided string is a number, 0 otherwise
+ ** Parameters: char* str
  *********************************************************************/
 int isNumber(char* str)
 {
