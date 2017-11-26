@@ -3,8 +3,9 @@
 # Author: Peter Nguyen
 # Date: 11/26/17
 # CS 372-400
-# Description: Project 2 - Client program for simple file transfer
-# application using two socket connections
+# Description: Project 2 - Client program for a simple file transfer
+# application using two socket connections - one for control,
+# the other for data transfer
 # ==================================================================
 
 import sys
@@ -115,7 +116,7 @@ def executeCommand(command, fileName, data, dPort):
 # ==================================================================
 # Function: validatePort
 # Description: Checks if provided port # is a number and in range.
-# If yes, returns the port #, otherwise childExitStatus
+# If yes, returns the port #, otherwise exits the program
 # Parameters: portArg
 #  ==================================================================
 def validatePort(portArg):
@@ -123,9 +124,9 @@ def validatePort(portArg):
         if int(portArg) <= 65535:
             return portArg
         else:
-            sys.exit("Port must be 65535 or under")
+            sys.exit("ERROR: Port must be 65535 or under")
     else:
-        sys.exit("Port must be a number")
+        sys.exit("ERROR: Port must be a number")
 
 # ==================================================================
 # Main Program
@@ -142,7 +143,7 @@ clientSocket = serverConnect(hostArg, serverPortArg)
 # Send command, file name and data port # to server
 # depending on the number of arguments from command line
 if len(sys.argv) < 5 or len(sys.argv) > 6:
-    print("Invalid number of arguments")
+    print("ERROR: Invalid number of arguments")
 
 elif len(sys.argv) == 5:
     fileArg = ""

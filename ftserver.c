@@ -3,8 +3,9 @@
  ** Author: Peter Nguyen
  ** Date: 11/26/17
  ** CS 372-400
- ** Description: Project 2 - Server program for simple file transfer
- ** application using two socket connections
+ ** Description: Project 2 - Server program for a simple file transfer
+ ** application using two socket connections - one for control,
+ ** the other for data transfer
  *********************************************************************/
 
 #include <stdio.h>
